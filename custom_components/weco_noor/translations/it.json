@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "WECO Noor - Accesso",
+        "data": {
+          "email": "Email",
+          "password": "Password",
+          "base_url": "Dominio API"
+        }
+      },
+      "plant": {
+        "title": "Seleziona l'impianto",
+        "data": { "plant_id": "Impianto" }
+      },
+      "device": {
+        "title": "Seleziona il dispositivo",
+        "data": { "device_sn": "Dispositivo" }
+      }
+    },
+    "error": {
+      "invalid_auth": "Email o password non corrette, oppure account con 2FA (non supportata)",
+      "cannot_connect": "Impossibile raggiungere il server WECO Noor",
+      "no_plants": "Nessun impianto trovato su questo account",
+      "no_devices": "Nessun dispositivo trovato in questo impianto"
+    },
+    "abort": {
+      "already_configured": "Questo dispositivo e' gia' configurato"
+    }
+  }
+}
