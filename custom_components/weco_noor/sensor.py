@@ -55,15 +55,15 @@ class _Classification:
 # corrisponde a quanto mostra l'app, segnalalo cosi' si corregge la voce.
 _EXACT_FIELDS: dict[str, _Classification] = {
     # --- Telemetria in tempo reale ---
-    "pvPower": _Classification(UnitOfPower.WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza fotovoltaico"),
-    "generatorPower": _Classification(UnitOfPower.WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza generatore"),
-    "gridPower": _Classification(UnitOfPower.WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza scambiata con la rete"),
-    "batteryPower": _Classification(UnitOfPower.WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza batteria"),
-    "batPower": _Classification(UnitOfPower.WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza batteria"),
-    "loadPower": _Classification(UnitOfPower.WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza carico"),
-    "pvInverterPower": _Classification(UnitOfPower.WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza inverter FV aggiuntivo"),
-    "externalLoadPower": _Classification(UnitOfPower.WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza carico esterno"),
-    "evPower": _Classification(UnitOfPower.WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza colonnina EV"),
+    "pvPower": _Classification(UnitOfPower.KILO_WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza fotovoltaico"),
+    "generatorPower": _Classification(UnitOfPower.KILO_WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza generatore"),
+    "gridPower": _Classification(UnitOfPower.KILO_WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza scambiata con la rete"),
+    "batteryPower": _Classification(UnitOfPower.KILO_WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza batteria"),
+    "batPower": _Classification(UnitOfPower.KILO_WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza batteria"),
+    "loadPower": _Classification(UnitOfPower.KILO_WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza carico"),
+    "pvInverterPower": _Classification(UnitOfPower.KILO_WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza inverter FV aggiuntivo"),
+    "externalLoadPower": _Classification(UnitOfPower.KILO_WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza carico esterno"),
+    "evPower": _Classification(UnitOfPower.KILO_WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, "Potenza colonnina EV"),
     "batSoc": _Classification(PERCENTAGE, SensorDeviceClass.BATTERY, SensorStateClass.MEASUREMENT, "Stato di carica batteria"),
     "batVoltage": _Classification(UnitOfElectricPotential.VOLT, SensorDeviceClass.VOLTAGE, SensorStateClass.MEASUREMENT, "Tensione batteria"),
     # --- Energia (totali del periodo selezionato: giorno/mese/anno) ---
@@ -76,6 +76,8 @@ _EXACT_FIELDS: dict[str, _Classification] = {
     "purchasingTotalEnergy": _Classification(UnitOfEnergy.KILO_WATT_HOUR, SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "Energia prelevata dalla rete (periodo)"),
     "batCharge": _Classification(UnitOfEnergy.KILO_WATT_HOUR, SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "Energia di carica batteria (periodo)"),
     "batDischarge": _Classification(UnitOfEnergy.KILO_WATT_HOUR, SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "Energia di scarica batteria (periodo)"),
+    "loadElectrical": _Classification(UnitOfEnergy.KILO_WATT_HOUR, SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "Consumo domestico (periodo)"),
+    "generatorTotalEnergy": _Classification(UnitOfEnergy.KILO_WATT_HOUR, SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, "Energia generatore (periodo)"),
     "pvSelfUsePercentage": _Classification(PERCENTAGE, None, SensorStateClass.MEASUREMENT, "Percentuale autoconsumo fotovoltaico"),
     "batSelfUsePercentage": _Classification(PERCENTAGE, None, SensorStateClass.MEASUREMENT, "Percentuale autoconsumo da batteria"),
     "gridSelfUsePercentage": _Classification(PERCENTAGE, None, SensorStateClass.MEASUREMENT, "Percentuale autoconsumo da rete"),
@@ -85,7 +87,7 @@ _EXACT_FIELDS: dict[str, _Classification] = {
 # Ordine dal piu' specifico al piu' generico: "power" va controllato prima
 # di "current", perche' un nome come "currentPower" deve finire in "power".
 _HINTS: list[tuple[str, _Classification]] = [
-    ("power", _Classification(UnitOfPower.WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT)),
+    ("power", _Classification(UnitOfPower.KILO_WATT, SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT)),
     ("soc", _Classification(PERCENTAGE, SensorDeviceClass.BATTERY, SensorStateClass.MEASUREMENT)),
     ("percentage", _Classification(PERCENTAGE, None, SensorStateClass.MEASUREMENT)),
     ("voltage", _Classification(UnitOfElectricPotential.VOLT, SensorDeviceClass.VOLTAGE, SensorStateClass.MEASUREMENT)),
