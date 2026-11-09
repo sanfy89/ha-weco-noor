@@ -20,6 +20,9 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
+from datetime import datetime
+
+from homeassistant.util import dt as dt_util
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
@@ -133,7 +136,7 @@ async def async_setup_entry(
 ) -> None:
     coordinator: WecoNoorCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    entities = []
+    entities = [WecoNoorLastUpdateSensor(coordinator, entry)]
     seen_keys: set[str] = set()
     for source in ("telemetry", "energy"):
         per_source: dict[str, Any] = {}
@@ -183,3 +186,40 @@ class WecoNoorSensor(CoordinatorEntity[WecoNoorCoordinator], SensorEntity):
         flat: dict[str, Any] = {}
         _flatten_numeric("", self.coordinator.data.get(self._source, {}), flat)
         return flat.get(self._field)
+
+
+class WecoNoorLastUpdateSensor(CoordinatorEntity[WecoNoorCoordinator], SensorEntity):
+    """Data/ora dell'ultima comunicazione reale del datalogger col cloud.
+
+    Diverso dal semplice orario in cui la nostra integrazione ha interrogato
+    il server: questo viene dal campo lastTime/lastUpdateTime restituito dal
+    server stesso, quindi dice se il datalogger e' davvero online e recente,
+    non solo se la nostra chiamata ha avuto successo. Il server non include
+    un fuso orario nella stringa: si assume sia lo stesso fuso locale
+    dell'installazione configurato in Home Assistant. Non verificato con un
+    confronto diretto contro l'app ufficiale.
+    """
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(self, coordinator: WecoNoorCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_last_update"
+        self._attr_name = f"{entry.data[CONF_DEVICE_ALIAS]} Ultimo aggiornamento"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.data[CONF_DEVICE_SN])},
+            name=entry.data[CONF_DEVICE_ALIAS],
+            manufacturer="WECO",
+        )
+
+    @property
+    def native_value(self):
+        telemetry = self.coordinator.data.get("telemetry", {})
+        raw = telemetry.get("lastTime") or telemetry.get("lastUpdateTime")
+        if not raw:
+            return None
+        try:
+            naive = datetime.strptime(raw, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return None
+        return naive.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
