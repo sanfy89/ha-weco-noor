@@ -149,3 +149,34 @@ class WecoNoorApiClient:
             {"serialNumberList": [device_sn], "queryType": query_type, "date": date},
         )
         return data.get("data") or {}
+
+    async def set_setting(
+        self,
+        device_sn: str,
+        key: str,
+        value: str,
+        original_value: str,
+        show_name: str,
+        model_name: str = "Basic Setting",
+    ) -> None:
+        """Scrive un parametro dell'inverter/batteria (es. WORK_MODE).
+
+        Endpoint scoperto da analisi statica, non documentato da WECO: puo'
+        cambiare senza preavviso. A differenza delle altre chiamate di
+        questo client, QUESTA MODIFICA DAVVERO IL FUNZIONAMENTO DEL
+        DISPOSITIVO. Chi la usa (tramite un'entita' select o un servizio)
+        dovrebbe aver gia' verificato il comportamento a mano, per esempio
+        da Postman, prima di affidarsi ad automazioni.
+        """
+        await self.post(
+            "api/setting/common/battery/setting",
+            {
+                "deviceSn": device_sn,
+                "key": key,
+                "value": value,
+                "modelName": model_name,
+                "originalValue": original_value,
+                "showName": show_name,
+                "settingKey": key,
+            },
+        )
