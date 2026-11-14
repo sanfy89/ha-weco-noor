@@ -29,9 +29,11 @@ _LOGGER = logging.getLogger(__name__)
 # automatica" e "Peak Shaving", perche' il dispositivo potrebbe trovarsi
 # in uno degli altri due stati (es. Battery Priority) e un'entita' select
 # mostra male uno stato che non compare tra le opzioni.
+# Confermati da analisi statica specifica per la famiglia Senergy (dtc
+# 109/110/111): "Time of Use" NON fa parte di WORK_MODE per questa famiglia,
+# e' una chiave separata (TIME_OF_USE) non ancora implementata qui.
 _OPTION_TO_CODE = {
     "Modalita' automatica": "0",
-    "Modalita' oraria": "1",
     "Peak Shaving": "2",
     "Battery Priority": "3",
 }
@@ -70,6 +72,7 @@ class WecoNoorWorkModeSelect(CoordinatorEntity[WecoNoorCoordinator], SelectEntit
         return _CODE_TO_OPTION.get(str(raw))
 
     async def async_select_option(self, option: str) -> None:
+        _LOGGER.warning("WECO select: async_select_option chiamato con option=%s", option)
         new_code = _OPTION_TO_CODE[option]
         telemetry = self.coordinator.data.get("telemetry", {})
         current_raw = str(telemetry.get("workMode", ""))

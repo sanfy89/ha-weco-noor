@@ -119,9 +119,12 @@ _SYSTEM_STATUS_MAP = {
 }
 _SYSTEM_STATUS_DEFAULT = "Offline"
 
+# Confermati da analisi statica specifica per la famiglia Senergy (dtc
+# 109/110/111), diversi da quelli trovati in precedenza per altre famiglie.
+# "1" non risulta un valore valido di WORK_MODE per questa famiglia:
+# "Time of Use" e' una chiave separata (TIME_OF_USE), non ancora mappata qui.
 _WORK_MODE_MAP = {
     "0": "Modalita' automatica",
-    "1": "Modalita' oraria",
     "2": "Peak Shaving",
     "3": "Battery Priority",
 }

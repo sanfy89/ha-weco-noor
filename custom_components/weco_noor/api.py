@@ -168,15 +168,21 @@ class WecoNoorApiClient:
         dovrebbe aver gia' verificato il comportamento a mano, per esempio
         da Postman, prima di affidarsi ad automazioni.
         """
-        await self.post(
-            "api/setting/common/battery/setting",
+        # Endpoint e forma del corpo confermati da analisi statica specifica
+        # per la famiglia Senergy (dtc 109/110/111): niente showName/settingKey,
+        # a differenza di altre famiglie dello stesso client.
+        data = await self.post(
+            "api/setting/senergy/setting",
             {
                 "deviceSn": device_sn,
                 "key": key,
                 "value": value,
                 "modelName": model_name,
                 "originalValue": original_value,
-                "showName": show_name,
-                "settingKey": key,
             },
         )
+        _LOGGER.debug("Risposta grezza da set_setting (%s=%s): %s", key, value, data)
+        if data.get("success") is False:
+            raise WecoNoorApiError(
+                data.get("errMessage") or f"Il server ha rifiutato la scrittura di {key}"
+            )
