@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .api import WecoNoorApiClient, WecoNoorApiError, WecoNoorAuthError
 from .const import (
@@ -52,6 +53,7 @@ class WecoNoorCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             mobile_id,
         )
         self._cycle = 0
+        self.last_telemetry_fetch = None
 
         device_type = entry.data[CONF_DEVICE_TYPE]
         dtc = entry.data[CONF_DTC]
@@ -71,6 +73,7 @@ class WecoNoorCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         data: dict[str, Any] = {}
         try:
             data["telemetry"] = await self.client.get_telemetry(self._telemetry_path)
+            self.last_telemetry_fetch = dt_util.utcnow()
 
             self._cycle += 1
             fetch_energy = self._energy_path is not None and (

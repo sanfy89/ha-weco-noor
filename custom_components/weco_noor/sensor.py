@@ -103,6 +103,31 @@ _HINTS: list[tuple[str, _Classification]] = [
 ]
 
 
+# Mappe codice -> testo trovate nel codice dell'app (lette dal percorso
+# Bluetooth, non confermate identiche per la risposta cloud: usarle come
+# ipotesi di lavoro, da verificare confrontando col valore reale mostrato
+# dall'app ufficiale nello stesso momento.
+_SYSTEM_STATUS_MAP = {
+    "0": "Bypass",
+    "1": "Off Grid",
+    "2": "On Grid",
+    "3": "Off Grid",
+    "4": "Controllo Griglia",
+    "5": "Controllo Griglia",
+    "6": "Controllo Griglia",
+    "7": "Controllo Griglia",
+}
+_SYSTEM_STATUS_DEFAULT = "Offline"
+
+_WORK_MODE_MAP = {
+    "0": "Modalita' automatica",
+    "1": "Modalita' oraria",
+    "2": "Peak Shaving",
+    "3": "Battery Priority",
+}
+_WORK_MODE_DEFAULT = "Non disponibile"
+
+
 def _classify(key: str) -> _Classification:
     # Il campo puo' comparire con un prefisso di percorso (es. "foo.pvPower"
     # per strutture annidate): si confronta solo l'ultimo pezzo con la mappa
@@ -136,7 +161,18 @@ async def async_setup_entry(
 ) -> None:
     coordinator: WecoNoorCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    entities = [WecoNoorLastUpdateSensor(coordinator, entry)]
+    entities = [
+        WecoNoorLastUpdateSensor(coordinator, entry),
+        WecoNoorLastPollSensor(coordinator, entry),
+        WecoNoorRawTextSensor(coordinator, entry, "systemStatus", "Stato del sistema (grezzo)"),
+        WecoNoorRawTextSensor(coordinator, entry, "workMode", "Modalita' di lavoro (grezzo)"),
+        WecoNoorMappedTextSensor(
+            coordinator, entry, "systemStatus", "Stato del sistema", _SYSTEM_STATUS_MAP
+        ),
+        WecoNoorMappedTextSensor(
+            coordinator, entry, "workMode", "Modalita' di lavoro", _WORK_MODE_MAP
+        ),
+    ]
     seen_keys: set[str] = set()
     for source in ("telemetry", "energy"):
         per_source: dict[str, Any] = {}
@@ -223,3 +259,101 @@ class WecoNoorLastUpdateSensor(CoordinatorEntity[WecoNoorCoordinator], SensorEnt
         except ValueError:
             return None
         return naive.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+
+
+class WecoNoorLastPollSensor(CoordinatorEntity[WecoNoorCoordinator], SensorEntity):
+    """Orario dell'ultima chiamata REST riuscita fatta da questa integrazione.
+
+    Diverso dal sensore "Ultimo aggiornamento" (che viene dal server e dice
+    quando il datalogger ha comunicato col cloud): questo dice invece quando
+    e' stata interrogata l'API dal lato di Home Assistant, utile per sapere
+    se il coordinator sta ancora girando regolarmente.
+    """
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(self, coordinator: WecoNoorCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_last_poll"
+        self._attr_name = f"{entry.data[CONF_DEVICE_ALIAS]} Ultima richiesta REST"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.data[CONF_DEVICE_SN])},
+            name=entry.data[CONF_DEVICE_ALIAS],
+            manufacturer="WECO",
+        )
+
+    @property
+    def native_value(self):
+        return self.coordinator.last_telemetry_fetch
+
+
+class WecoNoorRawTextSensor(CoordinatorEntity[WecoNoorCoordinator], SensorEntity):
+    """Sensore per un campo testuale grezzo della telemetria (non numerico).
+
+    Usato per campi come systemStatus o workMode, di cui non e' confermato
+    se il server restituisca gia' un testo leggibile o un codice numerico da
+    tradurre: il sensore mostra per ora il valore cosi' come arriva, cosi' si
+    puo' vedere il dato reale e decidere se serve una tabella di traduzione.
+    """
+
+    def __init__(
+        self, coordinator: WecoNoorCoordinator, entry: ConfigEntry, field: str, label: str
+    ) -> None:
+        super().__init__(coordinator)
+        self._field = field
+        self._attr_unique_id = f"{entry.entry_id}_raw_{field}"
+        self._attr_name = f"{entry.data[CONF_DEVICE_ALIAS]} {label}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.data[CONF_DEVICE_SN])},
+            name=entry.data[CONF_DEVICE_ALIAS],
+            manufacturer="WECO",
+        )
+
+    @property
+    def native_value(self):
+        telemetry = self.coordinator.data.get("telemetry", {})
+        value = telemetry.get(self._field)
+        if value is None:
+            return None
+        return str(value)
+
+
+class WecoNoorMappedTextSensor(CoordinatorEntity[WecoNoorCoordinator], SensorEntity):
+    """Traduzione di un campo di stato (systemStatus, workMode) in testo.
+
+    La mappa codice->testo viene dal codice dell'app, ma per un percorso di
+    lettura diverso (Bluetooth) da quello che usa questa integrazione
+    (cloud): e' un'ipotesi ragionevole, non una certezza verificata sul
+    dispositivo. Confronta questo valore con il sensore "(grezzo)" e con
+    l'app ufficiale nello stesso momento per capire se la mappa e' corretta.
+    """
+
+    def __init__(
+        self,
+        coordinator: WecoNoorCoordinator,
+        entry: ConfigEntry,
+        field: str,
+        label: str,
+        value_map: dict[str, str],
+    ) -> None:
+        super().__init__(coordinator)
+        self._field = field
+        self._map = value_map
+        self._attr_unique_id = f"{entry.entry_id}_mapped_{field}"
+        self._attr_name = f"{entry.data[CONF_DEVICE_ALIAS]} {label}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.data[CONF_DEVICE_SN])},
+            name=entry.data[CONF_DEVICE_ALIAS],
+            manufacturer="WECO",
+        )
+
+    @property
+    def native_value(self):
+        telemetry = self.coordinator.data.get("telemetry", {})
+        raw = telemetry.get(self._field)
+        if raw is None:
+            return None
+        default = (
+            _SYSTEM_STATUS_DEFAULT if self._field == "systemStatus" else _WORK_MODE_DEFAULT
+        )
+        return self._map.get(str(raw), f"{default} (codice {raw})")
